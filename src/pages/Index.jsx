@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 const Index = () => {
   const [position, setPosition] = useState({ x: 50, y: 50 });
@@ -11,18 +12,20 @@ const Index = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [bounceCount, setBounceCount] = useState(0);
   const [cornerBounceCount, setCornerBounceCount] = useState(0);
+  const [backgroundImage, setBackgroundImage] = useState(null);
+  const [customImage, setCustomImage] = useState(null);
   const containerRef = useRef(null);
-  const emojiRef = useRef(null);
+  const bouncingElementRef = useRef(null);
 
   useEffect(() => {
     const updateDimensions = () => {
-      if (containerRef.current && emojiRef.current) {
+      if (containerRef.current && bouncingElementRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
-        const emojiWidth = emojiRef.current.offsetWidth;
-        const emojiHeight = emojiRef.current.offsetHeight;
+        const elementWidth = bouncingElementRef.current.offsetWidth;
+        const elementHeight = bouncingElementRef.current.offsetHeight;
         setPosition(prev => ({
-          x: Math.min(prev.x, width - emojiWidth),
-          y: Math.min(prev.y, height - emojiHeight)
+          x: Math.min(prev.x, width - elementWidth),
+          y: Math.min(prev.y, height - elementHeight)
         }));
       }
     };
@@ -37,12 +40,12 @@ const Index = () => {
     let animationFrameId;
 
     const animate = () => {
-      if (containerRef.current && emojiRef.current) {
+      if (containerRef.current && bouncingElementRef.current) {
         const container = containerRef.current;
-        const emojiElement = emojiRef.current;
+        const element = bouncingElementRef.current;
         const { width, height } = container.getBoundingClientRect();
-        const emojiWidth = emojiElement.offsetWidth;
-        const emojiHeight = emojiElement.offsetHeight;
+        const elementWidth = element.offsetWidth;
+        const elementHeight = element.offsetHeight;
 
         setPosition(prevPos => {
           let newX = prevPos.x + velocity.x * speed;
@@ -52,24 +55,23 @@ const Index = () => {
           let bounced = false;
           let cornerBounce = false;
 
-          const cornerThreshold = 10; // Pixels from corner to consider a corner bounce
+          const cornerThreshold = 10;
 
-          if (newX <= 0 || newX >= width - emojiWidth) {
+          if (newX <= 0 || newX >= width - elementWidth) {
             newVelocityX = -newVelocityX;
-            newX = Math.max(0, Math.min(newX, width - emojiWidth));
+            newX = Math.max(0, Math.min(newX, width - elementWidth));
             bounced = true;
           }
-          if (newY <= 0 || newY >= height - emojiHeight) {
+          if (newY <= 0 || newY >= height - elementHeight) {
             newVelocityY = -newVelocityY;
-            newY = Math.max(0, Math.min(newY, height - emojiHeight));
+            newY = Math.max(0, Math.min(newY, height - elementHeight));
             bounced = true;
           }
 
-          // Check for corner bounce
           if ((newX <= cornerThreshold && newY <= cornerThreshold) ||
-              (newX <= cornerThreshold && newY >= height - emojiHeight - cornerThreshold) ||
-              (newX >= width - emojiWidth - cornerThreshold && newY <= cornerThreshold) ||
-              (newX >= width - emojiWidth - cornerThreshold && newY >= height - emojiHeight - cornerThreshold)) {
+              (newX <= cornerThreshold && newY >= height - elementHeight - cornerThreshold) ||
+              (newX >= width - elementWidth - cornerThreshold && newY <= cornerThreshold) ||
+              (newX >= width - elementWidth - cornerThreshold && newY >= height - elementHeight - cornerThreshold)) {
             cornerBounce = true;
           }
 
@@ -102,11 +104,29 @@ const Index = () => {
     setIsAnimating(prev => !prev);
   };
 
-  const emojiOptions = ['😊', '🚀', '🌈', '🍕', '🎉', '🐱', '🌟', '🦄'];
+  const emojiOptions = ['😊', '🚀', '🌈', '🍕', '🎉', '🐱', '🌟', '🦄', '🎨', '🎸', '🏀', '🌺', '🍦', '🐶', '🦋', '🌙'];
+
+  const handleBackgroundUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => setBackgroundImage(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCustomImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => setCustomImage(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="mb-4 flex space-x-4">
+      <div className="mb-4 flex space-x-4 flex-wrap justify-center">
         <Select onValueChange={setEmoji} value={emoji}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select an emoji" />
@@ -122,20 +142,43 @@ const Index = () => {
         <Button onClick={toggleAnimation}>
           {isAnimating ? 'Stop' : 'Start'}
         </Button>
+        <Input
+          type="file"
+          onChange={handleBackgroundUpload}
+          accept="image/*"
+          className="w-64"
+        />
+        <Input
+          type="file"
+          onChange={handleCustomImageUpload}
+          accept="image/*"
+          className="w-64"
+        />
       </div>
       <div
         ref={containerRef}
-        className="w-full h-[calc(100vh-300px)] border-4 border-gray-300 relative bg-white overflow-hidden"
+        className="w-full h-[calc(100vh-300px)] border-4 border-gray-300 relative overflow-hidden"
+        style={{
+          backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       >
         <div
-          ref={emojiRef}
-          className="absolute text-4xl"
+          ref={bouncingElementRef}
+          className="absolute"
           style={{
             left: `${position.x}px`,
             top: `${position.y}px`,
+            width: customImage ? '50px' : 'auto',
+            height: customImage ? '50px' : 'auto',
           }}
         >
-          {emoji}
+          {customImage ? (
+            <img src={customImage} alt="Custom" className="w-full h-full object-contain" />
+          ) : (
+            <span className="text-4xl">{emoji}</span>
+          )}
         </div>
       </div>
       <div className="mt-4 w-64">
