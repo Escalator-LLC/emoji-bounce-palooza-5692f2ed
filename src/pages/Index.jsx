@@ -9,16 +9,20 @@ const Index = () => {
   const [speed, setSpeed] = useState(5);
   const [emoji, setEmoji] = useState('😊');
   const [isAnimating, setIsAnimating] = useState(false);
+  const [bounceCount, setBounceCount] = useState(0);
+  const [cornerBounceCount, setCornerBounceCount] = useState(0);
   const containerRef = useRef(null);
   const emojiRef = useRef(null);
 
   useEffect(() => {
     const updateDimensions = () => {
-      if (containerRef.current) {
+      if (containerRef.current && emojiRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
+        const emojiWidth = emojiRef.current.offsetWidth;
+        const emojiHeight = emojiRef.current.offsetHeight;
         setPosition(prev => ({
-          x: Math.min(prev.x, width - emojiRef.current.offsetWidth),
-          y: Math.min(prev.y, height - emojiRef.current.offsetHeight)
+          x: Math.min(prev.x, width - emojiWidth),
+          y: Math.min(prev.y, height - emojiHeight)
         }));
       }
     };
@@ -45,14 +49,35 @@ const Index = () => {
           let newY = prevPos.y + velocity.y * speed;
           let newVelocityX = velocity.x;
           let newVelocityY = velocity.y;
+          let bounced = false;
+          let cornerBounce = false;
+
+          const cornerThreshold = 10; // Pixels from corner to consider a corner bounce
 
           if (newX <= 0 || newX >= width - emojiWidth) {
             newVelocityX = -newVelocityX;
             newX = Math.max(0, Math.min(newX, width - emojiWidth));
+            bounced = true;
           }
           if (newY <= 0 || newY >= height - emojiHeight) {
             newVelocityY = -newVelocityY;
             newY = Math.max(0, Math.min(newY, height - emojiHeight));
+            bounced = true;
+          }
+
+          // Check for corner bounce
+          if ((newX <= cornerThreshold && newY <= cornerThreshold) ||
+              (newX <= cornerThreshold && newY >= height - emojiHeight - cornerThreshold) ||
+              (newX >= width - emojiWidth - cornerThreshold && newY <= cornerThreshold) ||
+              (newX >= width - emojiWidth - cornerThreshold && newY >= height - emojiHeight - cornerThreshold)) {
+            cornerBounce = true;
+          }
+
+          if (bounced) {
+            setBounceCount(prev => prev + 1);
+            if (cornerBounce) {
+              setCornerBounceCount(prev => prev + 1);
+            }
           }
 
           setVelocity({ x: newVelocityX, y: newVelocityY });
@@ -80,7 +105,7 @@ const Index = () => {
   const emojiOptions = ['😊', '🚀', '🌈', '🍕', '🎉', '🐱', '🌟', '🦄'];
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <div className="mb-4 flex space-x-4">
         <Select onValueChange={setEmoji} value={emoji}>
           <SelectTrigger className="w-[180px]">
@@ -100,7 +125,7 @@ const Index = () => {
       </div>
       <div
         ref={containerRef}
-        className="w-full h-[calc(100vh-200px)] border-4 border-gray-300 relative bg-white overflow-hidden"
+        className="w-full h-[calc(100vh-300px)] border-4 border-gray-300 relative bg-white overflow-hidden"
       >
         <div
           ref={emojiRef}
@@ -123,6 +148,10 @@ const Index = () => {
           className="w-full"
         />
         <p className="text-center mt-2">Speed: {speed.toFixed(1)}</p>
+      </div>
+      <div className="mt-4 text-center">
+        <p>Total Bounces: {bounceCount}</p>
+        <p>Corner Bounces: {cornerBounceCount}</p>
       </div>
     </div>
   );
