@@ -9,19 +9,16 @@ const Index = () => {
   const [speed, setSpeed] = useState(5);
   const [emoji, setEmoji] = useState('😊');
   const [isAnimating, setIsAnimating] = useState(false);
-  const [score, setScore] = useState(0);
   const containerRef = useRef(null);
   const emojiRef = useRef(null);
 
   useEffect(() => {
     const updateDimensions = () => {
-      if (containerRef.current && emojiRef.current) {
+      if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
-        const emojiWidth = emojiRef.current.offsetWidth;
-        const emojiHeight = emojiRef.current.offsetHeight;
         setPosition(prev => ({
-          x: Math.min(prev.x, width - emojiWidth),
-          y: Math.min(prev.y, height - emojiHeight)
+          x: Math.min(prev.x, width - emojiRef.current.offsetWidth),
+          y: Math.min(prev.y, height - emojiRef.current.offsetHeight)
         }));
       }
     };
@@ -49,20 +46,13 @@ const Index = () => {
           let newVelocityX = velocity.x;
           let newVelocityY = velocity.y;
 
-          const hitLeftOrRight = newX <= 0 || newX >= width - emojiWidth;
-          const hitTopOrBottom = newY <= 0 || newY >= height - emojiHeight;
-
-          if (hitLeftOrRight) {
+          if (newX <= 0 || newX >= width - emojiWidth) {
             newVelocityX = -newVelocityX;
-            newX = hitLeftOrRight ? (newX <= 0 ? 0 : width - emojiWidth) : newX;
+            newX = Math.max(0, Math.min(newX, width - emojiWidth));
           }
-          if (hitTopOrBottom) {
+          if (newY <= 0 || newY >= height - emojiHeight) {
             newVelocityY = -newVelocityY;
-            newY = hitTopOrBottom ? (newY <= 0 ? 0 : height - emojiHeight) : newY;
-          }
-
-          if ((newX === 0 || newX === width - emojiWidth) && (newY === 0 || newY === height - emojiHeight)) {
-            setScore(prevScore => prevScore + 1);
+            newY = Math.max(0, Math.min(newY, height - emojiHeight));
           }
 
           setVelocity({ x: newVelocityX, y: newVelocityY });
@@ -90,8 +80,8 @@ const Index = () => {
   const emojiOptions = ['😊', '🚀', '🌈', '🍕', '🎉', '🐱', '🌟', '🦄'];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="mb-4 flex space-x-4 items-center">
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-100 p-4">
+      <div className="mb-4 flex space-x-4">
         <Select onValueChange={setEmoji} value={emoji}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select an emoji" />
@@ -107,9 +97,6 @@ const Index = () => {
         <Button onClick={toggleAnimation}>
           {isAnimating ? 'Stop' : 'Start'}
         </Button>
-        <div className="ml-4 text-lg font-bold">
-          Score: {score}
-        </div>
       </div>
       <div
         ref={containerRef}
@@ -121,7 +108,6 @@ const Index = () => {
           style={{
             left: `${position.x}px`,
             top: `${position.y}px`,
-            transition: 'left 0.05s linear, top 0.05s linear',
           }}
         >
           {emoji}
